@@ -20089,21 +20089,21 @@ var Protocol = class {
    * the error appropriately (e.g., by failing the task, logging, etc.). The Protocol layer
    * simply propagates the error.
    */
-  async _enqueueTaskMessage(taskId, message, sessionId) {
+  async _enqueueTaskMessage(taskId, message, sessionId2) {
     if (!this._taskStore || !this._taskMessageQueue) {
       throw new Error("Cannot enqueue task message: taskStore and taskMessageQueue are not configured");
     }
     const maxQueueSize = this._options?.maxTaskQueueSize;
-    await this._taskMessageQueue.enqueue(taskId, message, sessionId, maxQueueSize);
+    await this._taskMessageQueue.enqueue(taskId, message, sessionId2, maxQueueSize);
   }
   /**
    * Clears the message queue for a task and rejects any pending request resolvers.
    * @param taskId The task ID whose queue should be cleared
    * @param sessionId Optional session ID for binding the operation to a specific session
    */
-  async _clearTaskQueue(taskId, sessionId) {
+  async _clearTaskQueue(taskId, sessionId2) {
     if (this._taskMessageQueue) {
-      const messages = await this._taskMessageQueue.dequeueAll(taskId, sessionId);
+      const messages = await this._taskMessageQueue.dequeueAll(taskId, sessionId2);
       for (const message of messages) {
         if (message.type === "request" && isJSONRPCRequest(message.message)) {
           const requestId = message.message.id;
@@ -20146,7 +20146,7 @@ var Protocol = class {
       }, { once: true });
     });
   }
-  requestTaskStore(request, sessionId) {
+  requestTaskStore(request, sessionId2) {
     const taskStore = this._taskStore;
     if (!taskStore) {
       throw new Error("No task store configured");
@@ -20159,18 +20159,18 @@ var Protocol = class {
         return await taskStore.createTask(taskParams, request.id, {
           method: request.method,
           params: request.params
-        }, sessionId);
+        }, sessionId2);
       },
       getTask: async (taskId) => {
-        const task = await taskStore.getTask(taskId, sessionId);
+        const task = await taskStore.getTask(taskId, sessionId2);
         if (!task) {
           throw new McpError(ErrorCode.InvalidParams, "Failed to retrieve task: Task not found");
         }
         return task;
       },
       storeTaskResult: async (taskId, status, result) => {
-        await taskStore.storeTaskResult(taskId, status, result, sessionId);
-        const task = await taskStore.getTask(taskId, sessionId);
+        await taskStore.storeTaskResult(taskId, status, result, sessionId2);
+        const task = await taskStore.getTask(taskId, sessionId2);
         if (task) {
           const notification = TaskStatusNotificationSchema.parse({
             method: "notifications/tasks/status",
@@ -20183,18 +20183,18 @@ var Protocol = class {
         }
       },
       getTaskResult: (taskId) => {
-        return taskStore.getTaskResult(taskId, sessionId);
+        return taskStore.getTaskResult(taskId, sessionId2);
       },
       updateTaskStatus: async (taskId, status, statusMessage) => {
-        const task = await taskStore.getTask(taskId, sessionId);
+        const task = await taskStore.getTask(taskId, sessionId2);
         if (!task) {
           throw new McpError(ErrorCode.InvalidParams, `Task "${taskId}" not found - it may have been cleaned up`);
         }
         if (isTerminal(task.status)) {
           throw new McpError(ErrorCode.InvalidParams, `Cannot update task "${taskId}" from terminal status "${task.status}" to "${status}". Terminal states (completed, failed, cancelled) cannot transition to other states.`);
         }
-        await taskStore.updateTaskStatus(taskId, status, statusMessage, sessionId);
-        const updatedTask = await taskStore.getTask(taskId, sessionId);
+        await taskStore.updateTaskStatus(taskId, status, statusMessage, sessionId2);
+        const updatedTask = await taskStore.getTask(taskId, sessionId2);
         if (updatedTask) {
           const notification = TaskStatusNotificationSchema.parse({
             method: "notifications/tasks/status",
@@ -20207,7 +20207,7 @@ var Protocol = class {
         }
       },
       listTasks: (cursor) => {
-        return taskStore.listTasks(cursor, sessionId);
+        return taskStore.listTasks(cursor, sessionId2);
       }
     };
   }
@@ -20558,8 +20558,8 @@ var Server = class extends Protocol {
     this._serverInfo = _serverInfo;
     this._loggingLevels = /* @__PURE__ */ new Map();
     this.LOG_LEVEL_SEVERITY = new Map(LoggingLevelSchema.options.map((level, index) => [level, index]));
-    this.isMessageIgnored = (level, sessionId) => {
-      const currentLevel = this._loggingLevels.get(sessionId);
+    this.isMessageIgnored = (level, sessionId2) => {
+      const currentLevel = this._loggingLevels.get(sessionId2);
       return currentLevel ? this.LOG_LEVEL_SEVERITY.get(level) < this.LOG_LEVEL_SEVERITY.get(currentLevel) : false;
     };
     this._capabilities = options?.capabilities ?? {};
@@ -20893,9 +20893,9 @@ var Server = class extends Protocol {
    * @param params
    * @param sessionId optional for stateless and backward compatibility
    */
-  async sendLoggingMessage(params, sessionId) {
+  async sendLoggingMessage(params, sessionId2) {
     if (this._capabilities.logging) {
-      if (!this.isMessageIgnored(params.level, sessionId)) {
+      if (!this.isMessageIgnored(params.level, sessionId2)) {
         return this.notification({ method: "notifications/message", params });
       }
     }
@@ -21694,8 +21694,8 @@ var McpServer = class {
    * @param params
    * @param sessionId optional for stateless and backward compatibility
    */
-  async sendLoggingMessage(params, sessionId) {
-    return this.server.sendLoggingMessage(params, sessionId);
+  async sendLoggingMessage(params, sessionId2) {
+    return this.server.sendLoggingMessage(params, sessionId2);
   }
   /**
    * Sends a resource list changed event to the client, if connected.
@@ -21905,10 +21905,6 @@ var StdioServerTransport = class {
   }
 };
 
-// src/server.ts
-import * as os2 from "node:os";
-import * as path2 from "node:path";
-
 // ../core/src/index.ts
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -21965,23 +21961,23 @@ var SessionStore = class {
   constructor(directory) {
     this.directory = directory;
   }
-  file(sessionId) {
-    const digest = createHash("sha256").update(sessionId).digest("hex");
+  file(sessionId2) {
+    const digest = createHash("sha256").update(sessionId2).digest("hex");
     return path.join(this.directory, `${digest}.json`);
   }
-  read(sessionId) {
+  read(sessionId2) {
     try {
       const parsed = JSON.parse(
-        fs.readFileSync(this.file(sessionId), "utf8")
+        fs.readFileSync(this.file(sessionId2), "utf8")
       );
-      if (parsed.sessionId !== sessionId) throw new Error("Session ID mismatch");
+      if (parsed.sessionId !== sessionId2) throw new Error("Session ID mismatch");
       return {
-        sessionId,
+        sessionId: sessionId2,
         notes: Array.isArray(parsed.notes) ? parsed.notes.filter(validSessionNote) : [],
         lastListing: Array.isArray(parsed.lastListing) ? parsed.lastListing.filter(validNoteSummary) : []
       };
     } catch {
-      return { sessionId, notes: [], lastListing: [] };
+      return { sessionId: sessionId2, notes: [], lastListing: [] };
     }
   }
   write(data) {
@@ -21997,25 +21993,25 @@ var SessionStore = class {
     fs.renameSync(temporary, target);
     fs.chmodSync(target, 384);
   }
-  remember(sessionId, note) {
-    const data = this.read(sessionId);
+  remember(sessionId2, note) {
+    const data = this.read(sessionId2);
     const existing = data.notes.find((item) => item.id === note.id);
     if (existing) Object.assign(existing, note);
     else data.notes.push(note);
     this.write(data);
   }
-  setListing(sessionId, items) {
-    const data = this.read(sessionId);
+  setListing(sessionId2, items) {
+    const data = this.read(sessionId2);
     data.lastListing = items;
     this.write(data);
   }
-  resolveListingReference(sessionId, reference) {
+  resolveListingReference(sessionId2, reference) {
     const index = Number(reference);
     if (!Number.isInteger(index) || index < 1) return void 0;
-    return this.read(sessionId).lastListing[index - 1]?.id;
+    return this.read(sessionId2).lastListing[index - 1]?.id;
   }
-  owns(sessionId, noteId) {
-    return this.read(sessionId).notes.some((note) => note.id === noteId);
+  owns(sessionId2, noteId) {
+    return this.read(sessionId2).notes.some((note) => note.id === noteId);
   }
 };
 function humanApiError(baseUrl, code, fallback, status) {
@@ -22087,35 +22083,28 @@ function noteIdFromReference(reference) {
   }
 }
 
-// src/server.ts
-var injectedSessionId = string2().trim().min(1).max(200).optional().describe("Injected by the KeepNow Codex hook. Do not invent this value.");
-var injectedSessionCwd = string2().trim().min(1).optional().describe("Injected by the KeepNow Codex hook. Do not invent this value.");
-var sessionFields = {
-  sessionId: injectedSessionId,
-  sessionCwd: injectedSessionCwd
+// src/session-store.ts
+import * as os2 from "node:os";
+import * as path2 from "node:path";
+var SessionStore2 = class extends SessionStore {
+  constructor(directory = process.env.KEEPNOW_SESSION_DIR || path2.join(os2.homedir(), ".keepnow", "claude-code-sessions")) {
+    super(directory);
+  }
 };
-var store = new SessionStore(
-  process.env.KEEPNOW_SESSION_DIR || path2.join(os2.homedir(), ".keepnow", "codex-sessions")
-);
+
+// src/server.ts
+var sessionId = string2().trim().min(1).max(200).describe("The current Claude Code session ID.");
+var store = new SessionStore2();
 var client = createKeepNowClient({
   getApiKey: () => readApiKey(),
   getBaseUrl: () => process.env.KEEPNOW_API_URL || DEFAULT_BASE_URL,
-  missingApiKeyMessage: (url) => `KeepNow isn't connected. Get a key at ${url}/my/install, then run $keepnow --apikey <key>.`
+  missingApiKeyMessage: (url) => `KeepNow isn't connected. Get a key at ${url}/my/install, then run /keepnow --apikey <key>.`
 });
 var server = new McpServer({ name: "keepnow", version: "0.1.0" });
 var resultText = (text, isError = false) => ({
   content: [{ type: "text", text }],
   ...isError ? { isError: true } : {}
 });
-function requireSession(sessionId) {
-  return sessionId?.trim() || void 0;
-}
-function missingSessionResult() {
-  return resultText(
-    "KeepNow could not identify this Codex session. Trust the KeepNow hooks in /hooks, then retry.",
-    true
-  );
-}
 function formatListing(items) {
   if (items.length === 0) return "No matching notes.";
   return items.flatMap((note, index) => [
@@ -22127,18 +22116,14 @@ server.registerTool(
   "keepnow_session_notes",
   {
     title: "KeepNow session notes",
-    description: "List notes created through KeepNow in this Codex session. Call this before deciding whether a write-up updates an existing note.",
-    inputSchema: sessionFields,
+    description: "List notes created through KeepNow in this Claude Code session. Call this before deciding whether a write-up updates an existing note.",
+    inputSchema: { sessionId },
     annotations: { readOnlyHint: true, idempotentHint: true }
   },
-  async ({ sessionId }) => {
-    const currentSession = requireSession(sessionId);
-    if (!currentSession) return missingSessionResult();
-    const notes = store.read(currentSession).notes;
+  async ({ sessionId: sessionId2 }) => {
+    const notes = store.read(sessionId2).notes;
     return resultText(
-      notes.length ? notes.map(
-        (note) => `- id: ${note.id} \xB7 topic: ${note.topic} \xB7 title: ${note.title}`
-      ).join("\n") : "(none yet)"
+      notes.length ? notes.map((note) => `- id: ${note.id} \xB7 topic: ${note.topic} \xB7 title: ${note.title}`).join("\n") : "(none yet)"
     );
   }
 );
@@ -22146,25 +22131,21 @@ server.registerTool(
   "keepnow_get",
   {
     title: "Read a same-session KeepNow note",
-    description: "Read a note created in this Codex session before updating it. Notes outside the session are rejected.",
+    description: "Read a note created in this Claude Code session before updating it. Notes outside the session are rejected.",
     inputSchema: {
-      ...sessionFields,
+      sessionId,
       noteId: string2().trim().min(1).describe("ID returned by keepnow_session_notes.")
     },
     annotations: { readOnlyHint: true, idempotentHint: true }
   },
-  async ({ sessionId, noteId }) => {
-    const currentSession = requireSession(sessionId);
-    if (!currentSession) return missingSessionResult();
-    if (!store.owns(currentSession, noteId)) {
+  async ({ sessionId: sessionId2, noteId }) => {
+    if (!store.owns(sessionId2, noteId)) {
       return resultText(
-        "That note was not created in this Codex session, so it cannot be read for an update.",
+        "That note was not created in this Claude Code session, so it cannot be read for an update.",
         true
       );
     }
-    const response = await client.request(
-      `/api/v1/notes/${encodeURIComponent(noteId)}`
-    );
+    const response = await client.request(`/api/v1/notes/${encodeURIComponent(noteId)}`);
     if (!response.ok) return resultText(response.message, true);
     return resultText([`# ${response.data.title}`, "", response.data.content].join("\n"));
   }
@@ -22173,11 +22154,11 @@ server.registerTool(
   "keepnow_save",
   {
     title: "Save a KeepNow note",
-    description: "Create a KeepNow note, or update a note created in this Codex session. Show the complete write-up before calling this tool.",
+    description: "Create a KeepNow note, or update a note created in this Claude Code session. The user-facing write-up must be shown before calling this tool.",
     inputSchema: {
-      ...sessionFields,
+      sessionId,
       noteId: string2().trim().min(1).optional().describe("Same-session note ID to update."),
-      topic: string2().trim().min(1).max(200),
+      topic: string2().trim().min(1).max(200).describe("Short semantic identity for this note in the session."),
       title: string2().trim().min(1).max(200),
       summary: string2().trim().min(1).max(1e3),
       keywords: string2().trim().min(1).max(500),
@@ -22186,46 +22167,31 @@ server.registerTool(
     },
     annotations: { destructiveHint: false, idempotentHint: false }
   },
-  async ({
-    sessionId,
-    sessionCwd,
-    noteId,
-    topic,
-    title,
-    summary,
-    keywords,
-    content,
-    tags
-  }) => {
-    const currentSession = requireSession(sessionId);
-    if (!currentSession) return missingSessionResult();
+  async ({ sessionId: sessionId2, noteId, topic, title, summary, keywords, content, tags }) => {
     const isUpdate = Boolean(noteId);
-    if (noteId && !store.owns(currentSession, noteId)) {
+    if (noteId && !store.owns(sessionId2, noteId)) {
       return resultText(
-        "That note was not created in this Codex session, so it cannot be updated. Create a new note instead.",
+        "That note was not created in this Claude Code session, so it cannot be updated. Create a new note instead.",
         true
       );
     }
-    const cwd = sessionCwd || process.cwd();
+    const cwd = process.env.KEEPNOW_PROJECT_DIR || process.cwd();
     const payload = {
       title,
       summary,
       keywords,
       content,
       tags,
-      source: "codex",
-      sourceMeta: sourceMeta(cwd, { sessionId: currentSession })
+      source: "claude-code",
+      sourceMeta: sourceMeta(cwd, { sessionId: sessionId2 })
     };
     const response = await client.request(
       isUpdate ? `/api/v1/notes/${encodeURIComponent(noteId)}` : "/api/v1/notes",
-      {
-        method: isUpdate ? "PATCH" : "POST",
-        body: JSON.stringify(payload)
-      }
+      { method: isUpdate ? "PATCH" : "POST", body: JSON.stringify(payload) }
     );
     if (!response.ok) return resultText(response.message, true);
     const savedId = noteId ?? response.data.id;
-    store.remember(currentSession, { id: savedId, topic, title });
+    store.remember(sessionId2, { id: savedId, topic, title });
     return resultText(
       `${isUpdate ? "\u2713 Updated" : "\u2713 Saved"} \xB7 "${response.data.title}" \xB7 ${response.data.webUrl}`
     );
@@ -22237,19 +22203,17 @@ server.registerTool(
     title: "Search KeepNow notes",
     description: "Search note titles, summaries and keywords. Note bodies are not searched.",
     inputSchema: {
-      ...sessionFields,
+      sessionId,
       description: string2().trim().min(1).max(200)
     },
     annotations: { readOnlyHint: true, idempotentHint: true }
   },
-  async ({ sessionId, description }) => {
-    const currentSession = requireSession(sessionId);
-    if (!currentSession) return missingSessionResult();
+  async ({ sessionId: sessionId2, description }) => {
     const response = await client.request(
       `/api/v1/notes?q=${encodeURIComponent(description)}`
     );
     if (!response.ok) return resultText(response.message, true);
-    store.setListing(currentSession, response.data.items);
+    store.setListing(sessionId2, response.data.items);
     return resultText(
       `${formatListing(response.data.items)}
 
@@ -22262,17 +22226,13 @@ server.registerTool(
   {
     title: "Recent KeepNow notes",
     description: "List the 10 most recent KeepNow notes.",
-    inputSchema: sessionFields,
+    inputSchema: { sessionId },
     annotations: { readOnlyHint: true, idempotentHint: true }
   },
-  async ({ sessionId }) => {
-    const currentSession = requireSession(sessionId);
-    if (!currentSession) return missingSessionResult();
-    const response = await client.request(
-      "/api/v1/notes?pageSize=10"
-    );
+  async ({ sessionId: sessionId2 }) => {
+    const response = await client.request("/api/v1/notes?pageSize=10");
     if (!response.ok) return resultText(response.message, true);
-    store.setListing(currentSession, response.data.items);
+    store.setListing(sessionId2, response.data.items);
     return resultText(formatListing(response.data.items));
   }
 );
@@ -22282,25 +22242,22 @@ server.registerTool(
     title: "Open a KeepNow note",
     description: "Load a KeepNow note by ID, current /my/notes URL, or number from the last search/recent listing. The returned body becomes model context.",
     inputSchema: {
-      ...sessionFields,
-      reference: string2().trim().min(1)
+      sessionId,
+      reference: string2().trim().min(1).describe("A list number, note ID, or /my/notes URL.")
     },
-    annotations: { readOnlyHint: true, idempotentHint: true }
+    annotations: { readOnlyHint: true, idempotentHint: true },
+    _meta: { "anthropic/maxResultSizeChars": 3e5 }
   },
-  async ({ sessionId, reference }) => {
-    const currentSession = requireSession(sessionId);
-    if (!currentSession) return missingSessionResult();
+  async ({ sessionId: sessionId2, reference }) => {
     const isListNumber = /^\d+$/.test(reference);
-    const noteId = isListNumber ? store.resolveListingReference(currentSession, reference) : noteIdFromReference(reference);
+    const noteId = isListNumber ? store.resolveListingReference(sessionId2, reference) : noteIdFromReference(reference);
     if (!noteId) {
       return resultText(
         isListNumber ? `There is no note ${reference} in the last search or recent list.` : `That URL doesn't contain a note ID. Use a URL like ${client.baseUrl()}/my/notes/<id>.`,
         true
       );
     }
-    const response = await client.request(
-      `/api/v1/notes/${encodeURIComponent(noteId)}`
-    );
+    const response = await client.request(`/api/v1/notes/${encodeURIComponent(noteId)}`);
     if (!response.ok) return resultText(response.message, true);
     return resultText(
       [
@@ -22318,16 +22275,14 @@ server.registerTool(
   {
     title: "KeepNow account status",
     description: "Show the KeepNow account, plan, note count and storage usage.",
-    inputSchema: sessionFields,
+    inputSchema: { sessionId },
     annotations: { readOnlyHint: true, idempotentHint: true }
   },
-  async ({ sessionId }) => {
-    const currentSession = requireSession(sessionId);
-    if (!currentSession) return missingSessionResult();
+  async ({ sessionId: sessionId2 }) => {
     const response = await client.request("/api/v1/me");
     if (!response.ok) return resultText(response.message, true);
     const { email: email2, plan, usage, limits } = response.data;
-    const notes = store.read(currentSession).notes;
+    const notes = store.read(sessionId2).notes;
     return resultText(
       [
         `${email2 ?? "KeepNow account"} \xB7 ${plan}`,

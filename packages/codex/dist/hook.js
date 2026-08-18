@@ -1,8 +1,8 @@
-// packages/codex/src/hook.ts
+// src/hook.ts
 import * as os2 from "node:os";
 import * as path2 from "node:path";
 
-// packages/core/src/index.ts
+// ../core/src/index.ts
 import { createHash, randomUUID } from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -170,7 +170,7 @@ function createKeepNowClient(options) {
   };
 }
 
-// packages/codex/src/hook.ts
+// src/hook.ts
 var HELP = `KeepNow commands:
 
 $keepnow <description>        Write up the session following your description
