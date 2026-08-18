@@ -1,8 +1,17 @@
 {
   "name": "pi-keepnow",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Save and retrieve KeepNow notes from the Pi coding agent",
+  "homepage": "https://keepnow.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LoadShine/keepnow-plugins.git",
+    "directory": "packages/pi"
+  },
+  "bugs": {
+    "url": "https://github.com/LoadShine/keepnow-plugins/issues"
+  },
   "keywords": [
     "pi-package",
     "pi",
@@ -17,10 +26,12 @@
   "pi": {
     "extensions": [
       "./dist/index.js"
-    ]
+    ],
+    "image": "https://keepnow.app/images/og-keepnow.png"
   },
   "scripts": {
     "build": "node ../../scripts/build-pi.mjs",
+    "prepack": "pnpm build",
     "test": "pnpm build && node --test test/*.test.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "pack:check": "pnpm build && npm pack --dry-run"
