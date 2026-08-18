@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "UserPromptExpansion": [
+      {
+        "matcher": "^(?:keepnow:)?keepnow$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/dist/apikey-hook.js"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

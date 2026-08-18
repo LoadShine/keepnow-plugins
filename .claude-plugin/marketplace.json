@@ -1,0 +1,19 @@
+{
+  "name": "keepnow-plugins",
+  "description": "Official KeepNow plugins for coding agents.",
+  "owner": {
+    "name": "KeepNow",
+    "url": "https://keepnow.app"
+  },
+  "plugins": [
+    {
+      "name": "keepnow",
+      "source": {
+        "source": "npm",
+        "package": "keepnow-claude-code"
+      },
+      "description": "Save and retrieve KeepNow notes from Claude Code",
+      "category": "productivity"
+    }
+  ]
+}

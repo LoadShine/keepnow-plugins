@@ -1,0 +1,31 @@
+{
+  "name": "keepnow-claude-code",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Save and retrieve KeepNow notes from Claude Code",
+  "keywords": [
+    "claude-code-plugin",
+    "claude-code",
+    "keepnow",
+    "notes",
+    "knowledge-management"
+  ],
+  "files": [
+    ".claude-plugin",
+    ".mcp.json",
+    "dist",
+    "hooks",
+    "skills",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-claude-code.mjs",
+    "prepack": "pnpm build",
+    "test": "pnpm build && node --test test/*.test.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "pack:check": "pnpm build && npm pack --dry-run"
+  },
+  "devDependencies": {
+    "@keepnow/plugin-core": "workspace:*"
+  }
+}

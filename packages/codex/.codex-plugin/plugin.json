@@ -1,0 +1,28 @@
+{
+  "name": "keepnow",
+  "version": "0.1.0",
+  "description": "Turn Codex sessions into searchable Markdown notes on KeepNow and bring earlier notes back into context.",
+  "author": {
+    "name": "KeepNow",
+    "url": "https://keepnow.app"
+  },
+  "homepage": "https://keepnow.app",
+  "repository": "https://github.com/loadshine/keepnow-plugins",
+  "keywords": ["notes", "markdown", "knowledge", "session", "keepnow"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "KeepNow",
+    "shortDescription": "Write up Codex sessions and retrieve earlier notes",
+    "longDescription": "Turn Codex sessions into clean, searchable Markdown notes on KeepNow, then bring earlier notes back into context when needed.",
+    "developerName": "KeepNow",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://keepnow.app",
+    "defaultPrompt": [
+      "$keepnow summary",
+      "$keepnow all important findings"
+    ]
+  }
+}

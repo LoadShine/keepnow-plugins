@@ -1,0 +1,12 @@
+{
+  "name": "keepnow",
+  "displayName": "KeepNow",
+  "description": "Turn Claude Code sessions into searchable Markdown notes on KeepNow and bring earlier notes back into context.",
+  "version": "0.1.0",
+  "author": {
+    "name": "KeepNow",
+    "url": "https://keepnow.app"
+  },
+  "homepage": "https://keepnow.app",
+  "keywords": ["notes", "markdown", "knowledge", "session", "keepnow"]
+}

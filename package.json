@@ -1,0 +1,24 @@
+{
+  "name": "keepnow-plugins",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "build": "pnpm --filter pi-keepnow build && pnpm --filter keepnow-claude-code build && pnpm --filter keepnow-codex build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "pack:pi": "pnpm --filter pi-keepnow pack:check",
+    "pack:claude-code": "pnpm --filter keepnow-claude-code pack:check",
+    "check": "pnpm typecheck && pnpm test && pnpm build && pnpm pack:pi && pnpm pack:claude-code"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "latest",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.25.0",
+    "typebox": "latest",
+    "typescript": "^5.7.2",
+    "zod": "^4.4.3"
+  }
+}

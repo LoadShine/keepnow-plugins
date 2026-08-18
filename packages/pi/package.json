@@ -1,0 +1,35 @@
+{
+  "name": "pi-keepnow",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Save and retrieve KeepNow notes from the Pi coding agent",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "keepnow",
+    "notes",
+    "knowledge-management"
+  ],
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "scripts": {
+    "build": "node ../../scripts/build-pi.mjs",
+    "test": "pnpm build && node --test test/*.test.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "pack:check": "pnpm build && npm pack --dry-run"
+  },
+  "devDependencies": {
+    "@keepnow/plugin-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  }
+}

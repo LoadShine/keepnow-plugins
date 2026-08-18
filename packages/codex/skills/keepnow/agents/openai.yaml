@@ -1,0 +1,13 @@
+interface:
+  display_name: "KeepNow"
+  short_description: "Write up this session or retrieve KeepNow notes"
+  default_prompt: "$keepnow summary"
+
+policy:
+  allow_implicit_invocation: true
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "keepnow"
+      description: "Bundled KeepNow MCP server"

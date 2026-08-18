@@ -1,0 +1,15 @@
+{
+  "name": "keepnow-codex",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Save and retrieve KeepNow notes from Codex",
+  "private": true,
+  "scripts": {
+    "build": "node ../../scripts/build-codex.mjs",
+    "test": "pnpm build && node --test test/*.test.mjs",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@keepnow/plugin-core": "workspace:*"
+  }
+}
